@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -20,7 +19,7 @@ import {
   Settings, 
   Key, 
   Bell, 
-  HandsClapping, 
+  ThumbsUp, 
   FileText,
   Star,
   Clock
@@ -34,7 +33,6 @@ interface SupportedReport {
   category: string;
 }
 
-// Mock data for the profile
 const mockReports: SupportedReport[] = [
   {
     id: '1',
@@ -89,7 +87,7 @@ const ProfileView = () => {
             Security
           </TabsTrigger>
           <TabsTrigger value="activity">
-            <HandsClapping className="h-4 w-4 mr-2" />
+            <ThumbsUp className="h-4 w-4 mr-2" />
             Activity
           </TabsTrigger>
           <TabsTrigger value="settings">
@@ -334,7 +332,7 @@ const ProfileView = () => {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <HandsClapping className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <ThumbsUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">No supported reports yet</h3>
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">
                     You haven't joined hands with any reports yet. Browse reports and show support for causes you believe in.
