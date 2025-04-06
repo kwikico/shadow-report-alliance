@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Shield, FileText, Search, HandsClapping } from 'lucide-react';
+import { Shield, FileText, Search, ThumbsUp } from 'lucide-react';
 
 const HeroSection = () => {
   return (
@@ -50,7 +50,7 @@ const HeroSection = () => {
           
           <div className="bg-secondary/50 rounded-lg p-6 text-center card-hover">
             <div className="bg-primary/10 text-primary rounded-full p-3 inline-flex mb-4">
-              <HandsClapping className="h-6 w-6" />
+              <ThumbsUp className="h-6 w-6" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Join Hands</h3>
             <p className="text-sm text-foreground/70">

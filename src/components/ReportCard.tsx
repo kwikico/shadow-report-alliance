@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, HandsClapping, Users, ExternalLink } from 'lucide-react';
+import { MapPin, Clock, ThumbsUp, Users, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export interface Report {
@@ -64,7 +64,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onJoinHands }) => {
           className="join-hands-button"
           onClick={() => onJoinHands(report.id)}
         >
-          <HandsClapping className="h-4 w-4 mr-1" />
+          <ThumbsUp className="h-4 w-4 mr-1" />
           Join Hands
           <span className="ml-1 font-mono text-xs">({report.supporters})</span>
         </Button>

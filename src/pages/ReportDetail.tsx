@@ -17,7 +17,7 @@ import {
   Calendar, 
   FileText, 
   Image, 
-  HandsClapping, 
+  ThumbsUp, 
   MessageSquare, 
   ArrowLeft,
   Shield,
@@ -180,7 +180,7 @@ const ReportDetail = () => {
                       className="w-full"
                       onClick={handleJoinHands}
                     >
-                      <HandsClapping className="h-5 w-5 mr-2" />
+                      <ThumbsUp className="h-5 w-5 mr-2" />
                       Join Hands
                     </Button>
                     <p className="text-xs text-muted-foreground">
