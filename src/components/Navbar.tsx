@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Shield, Map, FileText, Users, Menu, X } from 'lucide-react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const token = localStorage.getItem('token');
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -24,18 +26,31 @@ const Navbar = () => {
           
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link to="/reports" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link
+              to="/reports"
+              className="text-foreground/80 hover:text-primary transition-colors"
+            >
               Reports
             </Link>
-            <Link to="/map" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link
+              to="/map"
+              className="text-foreground/80 hover:text-primary transition-colors"
+            >
               Map
             </Link>
-            <Link to="/submit" className="text-foreground/80 hover:text-primary transition-colors">
+            <Link
+              to="/submit"
+              className="text-foreground/80 hover:text-primary transition-colors"
+            >
               Submit Report
             </Link>
-            <Link to="/profile">
-              <Button variant="secondary">My Profile</Button>
-            </Link>
+            {token ? (
+              <Link to="/profile">
+                <Button variant="secondary">My Profile</Button>
+              </Link>
+            ) : (
+              <Button variant="secondary">Login</Button>
+            )}
           </div>
           
           {/* Mobile Menu Button */}
@@ -55,7 +70,7 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden pt-4 pb-3 space-y-3 animate-fade-in">
             <Link 
-              to="/reports" 
+              to="/reports"
               className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -63,7 +78,7 @@ const Navbar = () => {
               Reports
             </Link>
             <Link 
-              to="/map" 
+              to="/map"
               className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -71,7 +86,7 @@ const Navbar = () => {
               Map
             </Link>
             <Link 
-              to="/submit" 
+              to="/submit"
               className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -79,11 +94,11 @@ const Navbar = () => {
               Submit Report
             </Link>
             <Link 
-              to="/profile" 
+              to="/profile"
               className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
               onClick={() => setIsMenuOpen(false)}
             >
-              <Users className="inline-block mr-2 h-5 w-5" />
+              <Users className="inline-block mr-2 h-5 w-5"/>
               My Profile
             </Link>
           </div>

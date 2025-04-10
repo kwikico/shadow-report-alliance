@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { Shield, Github, ExternalLink } from 'lucide-react';
 
 const Footer = () => {
-  return (
+  const token = localStorage.getItem('token');
+    return (
     <footer className="bg-secondary/50 mt-auto">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -38,11 +39,13 @@ const Footer = () => {
                   Submit a Report
                 </Link>
               </li>
-              <li>
-                <Link to="/profile" className="text-muted-foreground hover:text-primary transition-colors">
-                  Profile & Settings
-                </Link>
-              </li>
+                {token && (
+                    <li>
+                        <Link to="/profile" className="text-muted-foreground hover:text-primary transition-colors">
+                            Profile & Settings
+                        </Link>
+                    </li>
+                )}
             </ul>
           </div>
           
@@ -64,8 +67,8 @@ const Footer = () => {
                   Privacy Policy
                 </Link>
               </li>
-              <li>
-                <a href="https://github.com" className="text-muted-foreground hover:text-primary transition-colors flex items-center" target="_blank" rel="noopener noreferrer">
+                <li>
+                    <a href="https://github.com/orgs/Shadow-Report-Alliance/repositories" className="text-muted-foreground hover:text-primary transition-colors flex items-center" target="_blank" rel="noopener noreferrer">
                   <Github className="h-4 w-4 mr-1" />
                   Source Code
                   <ExternalLink className="h-3 w-3 ml-1" />

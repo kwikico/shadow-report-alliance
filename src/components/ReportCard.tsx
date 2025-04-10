@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Clock, ThumbsUp, Users, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
+import { statusColors, statusTexts } from './ReportCardConstants';
 export interface Report {
   id: string;
   title: string;
@@ -24,12 +25,6 @@ interface ReportCardProps {
   onJoinHands: (reportId: string) => void;
 }
 
-const statusColors = {
-  verified: 'bg-green-500',
-  investigating: 'bg-yellow-500',
-  pending: 'bg-blue-500'
-};
-
 const ReportCard: React.FC<ReportCardProps> = ({ report, onJoinHands }) => {
   return (
     <Card className="card-hover overflow-hidden">
@@ -37,7 +32,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onJoinHands }) => {
         <div className="flex items-start justify-between">
           <CardTitle className="text-lg font-medium">{report.title}</CardTitle>
           <Badge variant="secondary" className={statusColors[report.status]}>
-            {report.status}
+            {statusTexts[report.status]}
           </Badge>
         </div>
       </CardHeader>
