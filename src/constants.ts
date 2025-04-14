@@ -7,6 +7,7 @@ export const CATEGORIES = [
   "Public Health Risk",
   "Financial Fraud",
   "Other"
+];
 
 export const STATUSES = [
   "verified", 

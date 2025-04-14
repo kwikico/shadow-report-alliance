@@ -4,10 +4,11 @@ import { useToast } from '@/hooks/use-toast';
 import { register } from '@/api';
 import {
   Card,
+  CardHeader,
   CardContent,
-  CardDescription,
   CardFooter,
   CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';

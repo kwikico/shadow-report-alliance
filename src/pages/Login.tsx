@@ -16,7 +16,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
     setError(null);
 
     try {
@@ -72,12 +72,16 @@ const Login = () => {
               />
             </div>
             {error && <div className="text-red-500">{error}</div>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </Button>
-          </form>
-          <p className="text-sm text-center mt-4">
-            Don't have an account? <Link to="/register" className="text-primary hover:underline">Register</Link>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Login'}
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
           </p>
         </CardContent>
       </Card>

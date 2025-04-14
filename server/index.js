@@ -10,7 +10,11 @@ const authMiddleware = require('./authMiddleware');
 const app = express();
 const PORT = 5000;
 
-app.use(cors());
+// Allow CORS from frontend
+app.use(cors({
+  origin: 'http://localhost:8085',
+  credentials: true,
+}));
 app.use(express.json());
 
 mongoose.connect('mongodb://localhost:27017/shadowReport', { useNewUrlParser: true, useUnifiedTopology: true })

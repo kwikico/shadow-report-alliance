@@ -1,6 +1,3 @@
---- a/shadow-report-alliance/src/components/ReportsList.tsx
-+++ b/shadow-report-alliance/src/components/ReportsList.tsx
-
 import React, { useState } from 'react'; import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Input } from '@/components/ui/input';
  import {
