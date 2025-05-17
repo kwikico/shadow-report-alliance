@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -72,17 +73,10 @@ const Login = () => {
               />
             </div>
             {error && <div className="text-red-500">{error}</div>}
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full mt-4" disabled={isLoading}>
               {isLoading ? 'Logging in...' : 'Login'}
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardFooter,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-          </p>
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
