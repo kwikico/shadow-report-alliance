@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { login } from '@/api';
 import { toast } from 'sonner';
+import { UserRoundPlus } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -78,6 +79,17 @@ const Login = () => {
             </Button>
           </form>
         </CardContent>
+        <CardFooter className="flex flex-col items-center">
+          <div className="text-sm text-muted-foreground mt-2">
+            Don't have an account?
+          </div>
+          <Link to="/register">
+            <Button variant="outline" className="mt-2 w-full">
+              <UserRoundPlus className="mr-2 h-4 w-4" />
+              Register New Account
+            </Button>
+          </Link>
+        </CardFooter>
       </Card>
     </div>
   );

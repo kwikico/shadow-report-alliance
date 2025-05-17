@@ -49,7 +49,9 @@ const Navbar = () => {
                 <Button variant="secondary">My Profile</Button>
               </Link>
             ) : (
-              <Button variant="secondary">Login</Button>
+              <Link to="/login">
+                <Button variant="secondary">Login</Button>
+              </Link>
             )}
           </div>
           
@@ -93,14 +95,25 @@ const Navbar = () => {
               <FileText className="inline-block mr-2 h-5 w-5" />
               Submit Report
             </Link>
-            <Link 
-              to="/profile"
-              className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Users className="inline-block mr-2 h-5 w-5"/>
-              My Profile
-            </Link>
+            {token ? (
+              <Link 
+                to="/profile"
+                className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Users className="inline-block mr-2 h-5 w-5"/>
+                My Profile
+              </Link>
+            ) : (
+              <Link 
+                to="/login"
+                className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Users className="inline-block mr-2 h-5 w-5"/>
+                Login
+              </Link>
+            )}
           </div>
         )}
       </div>
