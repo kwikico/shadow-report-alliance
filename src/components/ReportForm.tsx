@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -139,4 +140,114 @@ const ReportForm = () => {
           identity is protected.
         </CardDescription>
       </CardHeader>
-      
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Report Title</Label>
+            <Input
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              placeholder="Provide a clear title"
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={formData.category}
+              onValueChange={handleSelectChange}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location (Optional)</Label>
+            <Input
+              id="location"
+              name="location"
+              value={formData.location}
+              onChange={handleInputChange}
+              placeholder="City, State, Country"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Detailed Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Provide as much detail as possible"
+              className="min-h-[150px]"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="files">Evidence (Optional)</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+              <Input
+                id="files"
+                type="file"
+                onChange={handleFileChange}
+                multiple
+                className="hidden"
+              />
+              <label
+                htmlFor="files"
+                className="flex flex-col items-center cursor-pointer"
+              >
+                <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                <span className="text-sm font-medium">
+                  {files.length
+                    ? `${files.length} file${files.length !== 1 ? 's' : ''} selected`
+                    : 'Click to upload files'}
+                </span>
+                <span className="text-xs text-gray-500 mt-1">
+                  Images, documents, or other evidence
+                </span>
+              </label>
+            </div>
+            {files.length > 0 && (
+              <div className="text-sm text-gray-600">
+                {files.map((file, index) => (
+                  <div key={index} className="flex items-center">
+                    <span>{file.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center pt-4">
+            <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
+            <span className="text-sm text-muted-foreground">
+              All reports are confidential and your identity is protected.
+            </span>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Submitting...' : 'Submit Report'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ReportForm;
