@@ -20,6 +20,21 @@ export const login = async (email: string, password: string) => {
   return response.json();
 };
 
+export const walletLogin = async (address: string, signature: string) => {
+  const response = await fetch(`${BASE_URL}/auth/wallet-login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ address, signature }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Wallet login failed');
+  }
+  return response.json();
+};
+
 export const createReport = async (reportData: any) => {
   const response = await fetch(`${BASE_URL}/reports`, {
     method: 'POST',
@@ -72,7 +87,6 @@ export const getReport = async (id: string) => {
   return response.json();
 };
 
-
 export const register = async (username: string, email: string, password: string) => {
   const response = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
@@ -84,6 +98,21 @@ export const register = async (username: string, email: string, password: string
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Registration failed');
+  }
+  return response.json();
+};
+
+export const walletRegister = async (username: string, address: string, signature: string) => {
+  const response = await fetch(`${BASE_URL}/auth/wallet-register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, address, signature }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Wallet registration failed');
   }
   return response.json();
 };

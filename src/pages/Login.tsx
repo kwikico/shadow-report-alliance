@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { login } from '@/api';
+import { login, walletLogin } from '@/api';
 import { toast } from 'sonner';
-import { UserRoundPlus } from 'lucide-react';
+import { UserRoundPlus, Wallet } from 'lucide-react';
+import { connectWallet } from '@/utils/walletAuth';
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isWalletLoading, setIsWalletLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +41,33 @@ const Login = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleWalletLogin = async () => {
+    setIsWalletLoading(true);
+    setError(null);
+    
+    try {
+      const walletAuth = await connectWallet();
+      
+      if (walletAuth) {
+        const { address, signature } = walletAuth;
+        const response = await walletLogin(address, signature);
+        
+        if (response.token) {
+          localStorage.setItem('token', response.token);
+          toast.success('Logged in with wallet successfully!');
+          navigate('/');
+        } else {
+          setError('Invalid wallet or not registered. Please register first.');
+        }
+      }
+    } catch (err: any) {
+      setError('Wallet login failed. Please try again.');
+      console.error(err);
+    } finally {
+      setIsWalletLoading(false);
     }
   };
 
@@ -75,20 +104,42 @@ const Login = () => {
             </div>
             {error && <div className="text-red-500">{error}</div>}
             <Button type="submit" className="w-full mt-4" disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login'}
+              {isLoading ? 'Logging in...' : 'Login with Email'}
             </Button>
           </form>
+          
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t"></span>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={handleWalletLogin} 
+            disabled={isWalletLoading}
+            className="w-full"
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            {isWalletLoading ? 'Connecting...' : 'Connect Wallet'}
+          </Button>
         </CardContent>
         <CardFooter className="flex flex-col items-center">
           <div className="text-sm text-muted-foreground mt-2">
             Don't have an account?
           </div>
-          <Link to="/register">
-            <Button variant="outline" className="mt-2 w-full">
-              <UserRoundPlus className="mr-2 h-4 w-4" />
-              Register New Account
-            </Button>
-          </Link>
+          <div className="flex w-full gap-2 mt-2">
+            <Link to="/register" className="w-full">
+              <Button variant="outline" className="w-full">
+                <UserRoundPlus className="mr-2 h-4 w-4" />
+                Register with Email
+              </Button>
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </div>
