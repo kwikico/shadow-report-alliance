@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { register, walletRegister } from '@/api';
@@ -28,6 +27,7 @@ const Register = () => {
   const [isWalletSubmitting, setIsWalletSubmitting] = useState(false);
   const [walletUsername, setWalletUsername] = useState('');
   const [showWalletForm, setShowWalletForm] = useState(false);
+  const [walletConnectionTimer, setWalletConnectionTimer] = useState<NodeJS.Timeout | null>(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -64,19 +64,48 @@ const Register = () => {
     }
   };
 
+  useEffect(() => {
+    // Clear any existing timer when component unmounts
+    return () => {
+      if (walletConnectionTimer) {
+        clearTimeout(walletConnectionTimer);
+      }
+    };
+  }, [walletConnectionTimer]);
+
   const initiateWalletRegistration = async () => {
     setIsWalletSubmitting(true);
+    
     try {
+      // Set up a timeout to reset the button if wallet connection takes too long
+      const timer = setTimeout(() => {
+        setIsWalletSubmitting(false);
+        toast.error('Wallet connection timed out. Please try again.');
+      }, 10000);
+      
+      setWalletConnectionTimer(timer);
+      
       const walletAuth = await connectWallet();
+      
+      // Clear the timeout if we got a response
+      clearTimeout(timer);
+      setWalletConnectionTimer(null);
       
       if (walletAuth) {
         // Show username form if wallet is connected
         setShowWalletForm(true);
+      } else {
+        setIsWalletSubmitting(false);
       }
     } catch (error) {
+      // Clear any existing timer
+      if (walletConnectionTimer) {
+        clearTimeout(walletConnectionTimer);
+        setWalletConnectionTimer(null);
+      }
+      
       toast.error('Failed to connect wallet. Please try again.');
       console.error(error);
-    } finally {
       setIsWalletSubmitting(false);
     }
   };
@@ -98,6 +127,7 @@ const Register = () => {
         }, 3000);
       } else {
         toast.error('Please provide a username and connect your wallet.');
+        setIsWalletSubmitting(false);
       }
     } catch (error: any) {
       let errorMessage = 'Wallet registration failed';
@@ -107,7 +137,6 @@ const Register = () => {
         errorMessage = error.message;
       }
       toast.error(errorMessage);
-    } finally {
       setIsWalletSubmitting(false);
     }
   };
