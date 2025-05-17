@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +47,6 @@ const Register = () => {
         title: 'Registration Successful!',
         description: 'You have successfully registered. Redirecting to login...',
         duration: 3000,
-        position: 'top-right',
       });
       setTimeout(() => {
         navigate('/login');
@@ -62,7 +62,6 @@ const Register = () => {
         variant: 'destructive',
         title: 'Error',
         description: errorMessage,
-        position: 'top-right',
       });
     } finally {
       setIsSubmitting(false);

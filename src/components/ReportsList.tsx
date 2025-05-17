@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'; import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Input } from '@/components/ui/input';
  import {
@@ -24,10 +25,12 @@ import React, { useState } from 'react'; import { Card, CardContent, CardHeader,
 
  interface ReportsListProps {
    reports: Report[];
+   loading?: boolean;
  }
 
  const ReportsList: React.FC<ReportsListProps> = ({
    reports: initialReports,
+   loading = false,
  }) => {
    const [reports, setReports] = useState<Report[]>(initialReports);
    const [searchTerm, setSearchTerm] = useState('');
@@ -70,9 +73,7 @@ import React, { useState } from 'react'; import { Card, CardContent, CardHeader,
          );
        }
      } catch (error) {
-       toast({
-         variant: 'destructive',
-         title: 'Error',
+       toast.error('Error', {
          description:
            error instanceof Error
              ? error.message
