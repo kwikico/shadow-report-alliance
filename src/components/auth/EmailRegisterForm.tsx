@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { register } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FormData {
   username: string;
@@ -39,16 +39,24 @@ const EmailRegisterForm: React.FC<EmailRegisterFormProps> = ({ onSubmitting }) =
     onSubmitting(true);
 
     try {
-      await register(
-        formData.username,
-        formData.email,
-        formData.password
-      );
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            username: formData.username,
+          }
+        }
+      });
 
-      toast.success('Registration Successful! Redirecting to login...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Registration Successful! Check your email to confirm your account.');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
+      }
     } catch (error: any) {
       let errorMessage = 'Registration failed';
       if (error.message === 'User already exists') {

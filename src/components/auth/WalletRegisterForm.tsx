@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { walletRegister } from '@/api';
 import { connectWallet } from '@/utils/walletAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Wallet } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WalletRegisterFormProps {
   onBack: () => void;
@@ -20,6 +20,7 @@ const WalletRegisterForm: React.FC<WalletRegisterFormProps> = ({ onBack, isFullF
   const [walletUsername, setWalletUsername] = useState('');
   const [showWalletForm, setShowWalletForm] = useState(false);
   const [walletConnectionTimer, setWalletConnectionTimer] = useState<NodeJS.Timeout | null>(null);
+  const [walletData, setWalletData] = useState<{address: string, signature: string} | null>(null);
 
   useEffect(() => {
     // Clear any existing timer when component unmounts
@@ -49,6 +50,8 @@ const WalletRegisterForm: React.FC<WalletRegisterFormProps> = ({ onBack, isFullF
       setWalletConnectionTimer(null);
       
       if (walletAuth) {
+        // Store wallet data for later use
+        setWalletData(walletAuth);
         // Show username form if wallet is connected
         setShowWalletForm(true);
       } else {
@@ -72,19 +75,30 @@ const WalletRegisterForm: React.FC<WalletRegisterFormProps> = ({ onBack, isFullF
     setIsSubmitting(true);
     
     try {
-      const walletAuth = await connectWallet();
-      
-      if (walletAuth && walletUsername) {
-        const { address, signature } = walletAuth;
-        await walletRegister(walletUsername, address, signature);
-        
-        toast.success('Wallet Registration Successful! Redirecting to login...');
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
+      if (walletData && walletUsername) {
+        // For a real implementation, you would use a proper wallet auth method
+        // This is just a demonstration using email/password with the wallet address
+        const { data, error } = await supabase.auth.signUp({
+          email: `${walletData.address.toLowerCase()}@wallet.com`,
+          password: walletData.signature.substring(0, 20), // Just for demo purposes
+          options: {
+            data: {
+              username: walletUsername,
+              wallet_address: walletData.address,
+            }
+          }
+        });
+
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success('Wallet Registration Successful! Redirecting to login...');
+          setTimeout(() => {
+            navigate('/login');
+          }, 3000);
+        }
       } else {
         toast.error('Please provide a username and connect your wallet.');
-        setIsSubmitting(false);
       }
     } catch (error: any) {
       let errorMessage = 'Wallet registration failed';
@@ -94,6 +108,7 @@ const WalletRegisterForm: React.FC<WalletRegisterFormProps> = ({ onBack, isFullF
         errorMessage = error.message;
       }
       toast.error(errorMessage);
+    } finally {
       setIsSubmitting(false);
     }
   };

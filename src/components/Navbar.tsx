@@ -2,15 +2,21 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Shield, Map, FileText, Users, Menu, X } from 'lucide-react';
+import { Shield, Map, FileText, Users, Menu, X, LogOut } from 'lucide-react';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const token = localStorage.getItem('token');
+  const { user, signOut } = useSupabaseAuth();
   const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
   };
 
   return (
@@ -44,10 +50,16 @@ const Navbar = () => {
             >
               Submit Report
             </Link>
-            {token ? (
-              <Link to="/profile">
-                <Button variant="secondary">My Profile</Button>
-              </Link>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <Link to="/profile">
+                  <Button variant="secondary">My Profile</Button>
+                </Link>
+                <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
             ) : (
               <Link to="/login">
                 <Button variant="secondary">Login</Button>
@@ -95,15 +107,27 @@ const Navbar = () => {
               <FileText className="inline-block mr-2 h-5 w-5" />
               Submit Report
             </Link>
-            {token ? (
-              <Link 
-                to="/profile"
-                className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Users className="inline-block mr-2 h-5 w-5"/>
-                My Profile
-              </Link>
+            {user ? (
+              <>
+                <Link 
+                  to="/profile"
+                  className="block py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Users className="inline-block mr-2 h-5 w-5"/>
+                  My Profile
+                </Link>
+                <button
+                  className="block w-full text-left py-2 px-4 text-foreground/80 hover:bg-secondary rounded-md"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleLogout();
+                  }}
+                >
+                  <LogOut className="inline-block mr-2 h-5 w-5"/>
+                  Logout
+                </button>
+              </>
             ) : (
               <Link 
                 to="/login"

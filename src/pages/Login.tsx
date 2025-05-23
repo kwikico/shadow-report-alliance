@@ -1,22 +1,30 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { login, walletLogin } from '@/api';
 import { toast } from 'sonner';
 import { UserRoundPlus, Wallet } from 'lucide-react';
 import { connectWallet } from '@/utils/walletAuth';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn, signInWithWallet, user } = useSupabaseAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isWalletLoading, setIsWalletLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,14 +32,12 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await login(email, password);
-
-      if (response.token) {
-        localStorage.setItem('token', response.token);
-        toast.success('Logged in successfully!');
-        navigate('/');
-      } else {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
         setError('Invalid email or password.');
+      } else {
+        navigate('/');
       }
     } catch (err: any) {
       if (err.message === 'Invalid credentials') {
@@ -53,14 +59,12 @@ const Login = () => {
       
       if (walletAuth) {
         const { address, signature } = walletAuth;
-        const response = await walletLogin(address, signature);
+        const { error } = await signInWithWallet(address, signature);
         
-        if (response.token) {
-          localStorage.setItem('token', response.token);
-          toast.success('Logged in with wallet successfully!');
-          navigate('/');
-        } else {
+        if (error) {
           setError('Invalid wallet or not registered. Please register first.');
+        } else {
+          navigate('/');
         }
       }
     } catch (err: any) {
@@ -102,7 +106,7 @@ const Login = () => {
                 required
               />
             </div>
-            {error && <div className="text-red-500">{error}</div>}
+            {error && <div className="text-red-500 mt-2">{error}</div>}
             <Button type="submit" className="w-full mt-4" disabled={isLoading}>
               {isLoading ? 'Logging in...' : 'Login with Email'}
             </Button>

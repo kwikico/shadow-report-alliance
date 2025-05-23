@@ -10,6 +10,7 @@ import {
   Navigate,
   Outlet,
 } from "react-router-dom";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import Index from "@/pages/Index";
 import Reports from "@/pages/Reports";
 import Map from "@/pages/Map";
@@ -23,9 +24,13 @@ import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = () => {
-  const token = localStorage.getItem("token");
+  const { user, loading } = useSupabaseAuth();
+  
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
-  return token ? <Outlet /> : <Navigate to="/login" />;
+  return user ? <Outlet /> : <Navigate to="/login" />;
 };
 
 const App = () => {
@@ -44,7 +49,7 @@ const App = () => {
               <Route path="/reports/:id" element={<ReportDetail />} />
             </Route>
             <Route path="*" element={<NotFound />} />
-        </Routes>
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
