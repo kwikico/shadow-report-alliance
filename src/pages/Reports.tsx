@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -27,7 +26,12 @@ const Reports = () => {
           location: report.location || 'Unknown location',
           timestamp: report.timestamp,
           supporters: report.supporters,
-          evidence: report.evidence
+          evidence: report.evidence,
+          // Bounty fields
+          bounty_amount: report.bounty_amount,
+          bounty_currency: report.bounty_currency,
+          help_needed: report.help_needed,
+          is_bounty_active: report.is_bounty_active
         }));
         
         setReports(formattedReports);

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,7 +19,7 @@ import ReportDetail from "@/pages/ReportDetail";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/NotFound";
-import { SeedDataButton } from "@/utils/seedReports";
+import { SeedDataButton } from "@/components/SeedDataButton";
 
 const queryClient = new QueryClient();
 

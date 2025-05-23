@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -22,9 +22,18 @@ import {
   ThumbsUp, 
   FileText,
   Star,
-  Clock
+  Clock,
+  MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getReportsByUser } from '@/api/supabaseReports';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+
+interface ProfileViewProps {
+  user?: any;
+}
 
 interface SupportedReport {
   id: string;
@@ -36,35 +45,72 @@ interface SupportedReport {
 const mockReports: SupportedReport[] = [
   {
     id: '1',
-    title: 'Environmental Pollution in River Valley',
-    date: new Date('2025-03-15'),
-    category: 'Environmental Violations'
+    title: 'Environmental Hazard at Local Factory',
+    date: new Date(2024, 0, 15),
+    category: 'Environmental',
+  },
+  {
+    id: '2',
+    title: 'Unsafe Working Conditions',
+    date: new Date(2024, 0, 10),
+    category: 'Workplace',
   },
   {
     id: '3',
-    title: 'Worker Exploitation at Manufacturing Plant',
-    date: new Date('2025-04-02'),
-    category: 'Corporate Misconduct'
+    title: 'Suspicious Financial Activity',
+    date: new Date(2024, 0, 5),
+    category: 'Financial',
   },
-  {
-    id: '6',
-    title: 'Unlawful Surveillance of Activists',
-    date: new Date('2025-04-01'),
-    category: 'Government Overreach'
-  }
 ];
 
-const ProfileView = () => {
-  const [username, setUsername] = useState('WhistleGuardian');
-  const [displayName, setDisplayName] = useState('Whistle Guardian');
-  const [email, setEmail] = useState('secure-email@protonmail.com');
+const ProfileView = ({ user }: ProfileViewProps = {}) => {
+  const navigate = useNavigate();
+  const { user: currentUser } = useSupabaseAuth();
+  const [username, setUsername] = useState(user?.username || 'WhistleGuardian');
+  const [displayName, setDisplayName] = useState(user?.displayName || 'Whistle Guardian');
+  const [email, setEmail] = useState(user?.email || 'secure-email@protonmail.com');
   const [isEditing, setIsEditing] = useState(false);
-  
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    lastName: '',
+    email: user?.email || '',
+    phoneNumber: '',
+    address: '',
+    bio: '',
+  });
+  const [notifications, setNotifications] = useState({
+    reportUpdates: true,
+    supporterNotifications: true,
+    newsletter: false,
+  });
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [myReports, setMyReports] = useState<any[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMyReports = async () => {
+      if (currentUser) {
+        setReportsLoading(true);
+        try {
+          const reports = await getReportsByUser(currentUser.id);
+          setMyReports(reports);
+        } catch (error) {
+          console.error('Error fetching reports:', error);
+        } finally {
+          setReportsLoading(false);
+        }
+      }
+    };
+
+    fetchMyReports();
+  }, [currentUser]);
+
   const handleSaveProfile = () => {
     setIsEditing(false);
-    toast.success("Profile updated successfully", {
-      description: "Your pseudonymous identity has been updated.",
-    });
+    toast.success('Profile updated successfully');
   };
   
   const handleChangePassword = (e: React.FormEvent) => {
@@ -76,27 +122,17 @@ const ProfileView = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="profile">
-        <TabsList className="grid grid-cols-4 mb-6">
-          <TabsTrigger value="profile">
-            <User className="h-4 w-4 mr-2" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="security">
-            <Shield className="h-4 w-4 mr-2" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="activity">
-            <ThumbsUp className="h-4 w-4 mr-2" />
-            Activity
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </TabsTrigger>
+      <Tabs defaultValue="account" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="myreports">My Reports</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="profile">
+        <TabsContent value="account">
           <Card>
             <CardHeader>
               <CardTitle>Your Pseudonymous Profile</CardTitle>
@@ -108,12 +144,12 @@ const ProfileView = () => {
               <div className="flex flex-col md:flex-row md:items-center gap-6">
                 <Avatar className="h-24 w-24">
                   <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                    {displayName.split(' ').map(n => n[0]).join('')}
+                    {user?.displayName.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="space-y-1.5">
-                  <h3 className="text-2xl font-semibold">{displayName}</h3>
+                  <h3 className="text-2xl font-semibold">{user?.displayName}</h3>
                   <div className="flex items-center space-x-2">
                     <Badge variant="secondary">Trusted Reporter</Badge>
                     <Badge variant="outline" className="bg-primary/10 text-primary">
@@ -133,7 +169,7 @@ const ProfileView = () => {
                     <Label htmlFor="username">Username</Label>
                     <Input
                       id="username"
-                      value={username}
+                      value={user?.username || ''}
                       onChange={(e) => setUsername(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
@@ -145,7 +181,7 @@ const ProfileView = () => {
                     <Label htmlFor="displayName">Display Name</Label>
                     <Input
                       id="displayName"
-                      value={displayName}
+                      value={user?.displayName || ''}
                       onChange={(e) => setDisplayName(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
@@ -157,7 +193,7 @@ const ProfileView = () => {
                     <Label htmlFor="email">Secure Email (Optional)</Label>
                     <Input
                       id="email"
-                      value={email}
+                      value={user?.email || ''}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
@@ -179,17 +215,17 @@ const ProfileView = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Username</Label>
-                      <p>{username}</p>
+                      <p>{user?.username}</p>
                     </div>
                     
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Display Name</Label>
-                      <p>{displayName}</p>
+                      <p>{user?.displayName}</p>
                     </div>
                     
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Secure Email</Label>
-                      <p>{email || 'Not provided'}</p>
+                      <p>{user?.email || 'Not provided'}</p>
                     </div>
                     
                     <div className="space-y-1">
@@ -297,6 +333,48 @@ const ProfileView = () => {
           </div>
         </TabsContent>
         
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>
+                Manage your notification preferences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Report Status Updates</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Get notified when reports you support are updated.</p>
+                  </div>
+                  <Button variant="outline" size="sm">Configure</Button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">New Related Reports</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Get alerted about new reports in categories you follow.</p>
+                  </div>
+                  <Button variant="outline" size="sm">Configure</Button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Security Alerts</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Receive critical security notifications about your account.</p>
+                  </div>
+                  <Button variant="outline" size="sm">Configure</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="activity">
           <Card>
             <CardHeader>
@@ -338,6 +416,84 @@ const ProfileView = () => {
                     You haven't joined hands with any reports yet. Browse reports and show support for causes you believe in.
                   </p>
                   <Button className="mt-4">Browse Reports</Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="myreports">
+          <Card>
+            <CardHeader>
+              <CardTitle>My Reports</CardTitle>
+              <CardDescription>
+                View and manage all reports you've submitted
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {reportsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                </div>
+              ) : myReports.length > 0 ? (
+                <div className="space-y-4">
+                  {myReports.map((report) => (
+                    <div 
+                      key={report.id}
+                      className="border rounded-lg p-4 hover:bg-secondary/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/reports/${report.id}`)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-lg">{report.title}</h4>
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {report.description}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            <Badge variant="outline">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              {report.location || 'No location'}
+                            </Badge>
+                            <Badge variant="outline">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {formatDistanceToNow(new Date(report.timestamp), { addSuffix: true })}
+                            </Badge>
+                            <Badge variant="outline">
+                              <ThumbsUp className="h-3 w-3 mr-1" />
+                              {report.supporters} supporters
+                            </Badge>
+                            <Badge variant={report.status === 'resolved' ? 'default' : 'secondary'}>
+                              {report.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="ml-4 text-right">
+                          {report.is_bounty_active && (
+                            <div className="mb-2">
+                              <Badge variant="default">
+                                Bounty: {report.bounty_amount === 0 ? 'Free Help' : 
+                                  `${report.bounty_currency || 'USD'} ${report.bounty_amount}`}
+                              </Badge>
+                            </div>
+                          )}
+                          {report.bounty_acceptances && report.bounty_acceptances.length > 0 && (
+                            <div className="text-sm text-muted-foreground">
+                              {report.bounty_acceptances.filter((a: any) => a.status === 'pending').length} pending applications
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No reports yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                    You haven't submitted any reports yet. Start by reporting an issue you've encountered.
+                  </p>
+                  <Button onClick={() => navigate('/submit-report')}>Submit Your First Report</Button>
                 </div>
               )}
             </CardContent>

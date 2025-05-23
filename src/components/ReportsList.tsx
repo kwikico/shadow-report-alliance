@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react'; 
+import React, { useState, useEffect } from 'react'; 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Filter, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
-import { supportReport } from '@/api/supabaseReports';
+import { supportReport, checkReportLike } from '@/api/supabaseReports';
 import ReportCard, { Report } from './ReportCard';
 import { CATEGORIES, STATUSES } from '@/constants';
 import {
@@ -23,6 +22,8 @@ import {
   INITIAL_STATUS_FILTER,
   INITIAL_TIME_PERIOD,
 } from './ReportsListConstants';
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from 'react-router-dom';
 
 interface ReportsListProps {
   reports: Report[];
@@ -34,25 +35,52 @@ const ReportsList: React.FC<ReportsListProps> = ({
   loading = false,
 }) => {
   const [reports, setReports] = useState<Report[]>(initialReports);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [likedReports, setLikedReports] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState(INITIAL_CATEGORY_FILTER);
   const [statusFilter, setStatusFilter] = useState(INITIAL_STATUS_FILTER);
+  const [timePeriod, setTimePeriod] = useState(INITIAL_TIME_PERIOD);
+  const [sortBy, setSortBy] = useState(INITIAL_SORT_BY);
+  const navigate = useNavigate();
 
   // Update reports when initialReports changes
-  React.useEffect(() => {
+  useEffect(() => {
     setReports(initialReports);
   }, [initialReports]);
 
+  // Fetch liked reports when component mounts
+  useEffect(() => {
+    const fetchLikedReports = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: likes } = await supabase
+          .from('report_likes')
+          .select('report_id')
+          .eq('user_id', user.id);
+
+        if (likes) {
+          setLikedReports(new Set(likes.map(like => like.report_id)));
+        }
+      } catch (error) {
+        console.error('Error fetching liked reports:', error);
+      }
+    };
+
+    fetchLikedReports();
+  }, []);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    setSearchQuery(e.target.value);
   };
 
   const filteredReports = reports.filter((report) => {
     // Apply search filter
     const matchesSearch =
-      searchTerm === '' ||
-      report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+      searchQuery === '' ||
+      report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      report.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Apply category filter
     const matchesCategory =
@@ -70,24 +98,50 @@ const ReportsList: React.FC<ReportsListProps> = ({
     try {
       const result = await supportReport(reportId);
       if (result) {
-        setReports(
-          reports.map((report) =>
+        setReports(prevReports =>
+          prevReports.map(report =>
             report.id === reportId
               ? { ...report, supporters: result.supporters }
               : report
           )
         );
-        toast.success("Thank you for your support!");
+        
+        // Update liked status
+        if (result.isLiked) {
+          setLikedReports(prev => new Set([...prev, reportId]));
+        } else {
+          setLikedReports(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(reportId);
+            return newSet;
+          });
+        }
+        
+        toast.success(result.isLiked ? "Thank you for your support!" : "Support removed");
       }
     } catch (error) {
-      toast.error('Failed to update supporters. Please try again.');
+      console.error('Error updating support:', error);
+      toast.error('Failed to update support. Please try again.');
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="h-[200px] animate-pulse rounded-lg bg-muted"
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (reports.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">No reports found</p>
       </div>
     );
   }
@@ -105,7 +159,7 @@ const ReportsList: React.FC<ReportsListProps> = ({
               <Input
                 placeholder="Search reports by keyword..."
                 className="pl-10"
-                value={searchTerm}
+                value={searchQuery}
                 onChange={handleSearch}
               />
             </div>
@@ -202,6 +256,7 @@ const ReportsList: React.FC<ReportsListProps> = ({
                   key={report.id}
                   report={report}
                   onJoinHands={handleJoinHands}
+                  isLiked={likedReports.has(report.id)}
                 />
               ))}
             </div>
@@ -221,7 +276,15 @@ const ReportsList: React.FC<ReportsListProps> = ({
           {filteredReports.length > 0 ? (
             <div className="space-y-4">
               {filteredReports.map((report) => (
-                <Card key={report.id} className="overflow-hidden">
+                <Card 
+                  key={report.id} 
+                  className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={(e) => {
+                    // Prevent navigation if Join Hands button is clicked
+                    if ((e.target as HTMLElement).closest('button')) return;
+                    navigate(`/reports/${report.id}`);
+                  }}
+                >
                   <div className="flex flex-col md:flex-row">
                     <div className="flex-grow p-4">
                       <div className="flex items-start justify-between mb-2">

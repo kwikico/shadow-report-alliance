@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { getReportById, supportReport } from '@/api/supabaseReports';
+import { getReportById, supportReport, checkReportLike, acceptBounty, getBountyApplications, updateBountyApplication } from '@/api/supabaseReports';
 import { toast } from 'sonner';
 import { 
   Clock, 
@@ -12,8 +11,11 @@ import {
   UserCheck, 
   AlertCircle, 
   ArrowLeft, 
-  HandsClapping,
-  FileImage
+  FileImage,
+  ThumbsUp,
+  Users,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import {
   Card,
@@ -26,15 +28,32 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import { Report } from "@/components/ReportCard";
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [report, setReport] = useState<any>(null);
+  const { user } = useSupabaseAuth();
+  const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
+  const [showAcceptBountyDialog, setShowAcceptBountyDialog] = useState(false);
+  const [bountyAgreement, setBountyAgreement] = useState(false);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
-    const fetchReport = async () => {
+    const fetchReportAndLikeStatus = async () => {
       if (!id) {
         navigate('/reports');
         return;
@@ -45,7 +64,36 @@ const ReportDetail = () => {
         const data = await getReportById(id);
         
         if (data) {
-          setReport(data);
+          // Transform the data to match the Report interface
+          const transformedReport: Report = {
+            id: data.id,
+            title: data.title,
+            excerpt: data.description,
+            category: data.category,
+            status: data.status,
+            location: data.location || 'Unknown location',
+            timestamp: data.timestamp,
+            supporters: data.supporters,
+            evidence: data.evidence,
+            bounty_amount: data.bounty_amount,
+            bounty_currency: data.bounty_currency,
+            help_needed: data.help_needed,
+            is_bounty_active: data.is_bounty_active
+          };
+          
+          setReport(transformedReport);
+          
+          // Check if user is the owner
+          if (user && data.user_id === user.id) {
+            setIsOwner(true);
+            // Fetch applications if owner
+            const apps = await getBountyApplications(id);
+            setApplications(apps);
+          }
+          
+          // Check if user has liked this report
+          const liked = await checkReportLike(id);
+          setIsLiked(liked);
         } else {
           navigate('/reports');
           toast.error('Report not found');
@@ -59,8 +107,8 @@ const ReportDetail = () => {
       }
     };
 
-    fetchReport();
-  }, [id, navigate]);
+    fetchReportAndLikeStatus();
+  }, [id, navigate, user]);
 
   const handleSupport = async () => {
     if (!report) return;
@@ -69,10 +117,36 @@ const ReportDetail = () => {
       const result = await supportReport(report.id);
       if (result) {
         setReport({ ...report, supporters: result.supporters });
-        toast.success("Thank you for your support!");
+        setIsLiked(result.isLiked);
+        toast.success(result.isLiked ? "Thank you for your support!" : "Support removed");
       }
     } catch (error) {
+      console.error("Error updating support:", error);
       toast.error('Failed to register support');
+    }
+  };
+
+  const handleAcceptBounty = async () => {
+    if (!bountyAgreement) {
+      toast.error("You must agree to the legal terms to accept the bounty");
+      return;
+    }
+
+    if (!id) return;
+
+    const success = await acceptBounty(id);
+    if (success) {
+      setShowAcceptBountyDialog(false);
+      setBountyAgreement(false);
+    }
+  };
+
+  const handleApplicationUpdate = async (applicationId: string, status: 'approved' | 'rejected') => {
+    const success = await updateBountyApplication(applicationId, status);
+    if (success) {
+      // Refresh applications
+      const apps = await getBountyApplications(id!);
+      setApplications(apps);
     }
   };
 
@@ -131,75 +205,53 @@ const ReportDetail = () => {
       <Navbar />
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4">
-          <div className="mb-6">
-            <Button variant="outline" onClick={() => navigate('/reports')} className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Reports
-            </Button>
-            <div className="flex flex-wrap justify-between items-start gap-4">
-              <div>
-                <h1 className="text-3xl font-bold">{report.title}</h1>
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
-                  <span className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" /> {formattedDate}
-                  </span>
-                  {report.location && (
-                    <span className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" /> {report.location}
-                    </span>
-                  )}
-                  <span className="flex items-center">
-                    <Tag className="h-4 w-4 mr-1" /> {report.category}
-                  </span>
-                  <span className="flex items-center">
-                    <UserCheck className="h-4 w-4 mr-1" /> {report.supporters} supporters
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex items-center">
-                <Badge className={getStatusColor(report.status)}>
-                  {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                </Badge>
-              </div>
-            </div>
-          </div>
+          <Button
+            variant="ghost"
+            className="mb-6"
+            onClick={() => navigate('/reports')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Reports
+          </Button>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Description</CardTitle>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-2xl mb-2">{report.title}</CardTitle>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>{formattedDate}</span>
+                        <MapPin className="h-4 w-4 ml-2" />
+                        <span>{report.location}</span>
+                      </div>
+                    </div>
+                    <Badge variant={report.status === "resolved" ? "default" : "secondary"}>
+                      {report.status}
+                    </Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-line">{report.description}</p>
+                  <p className="whitespace-pre-wrap">{report.excerpt}</p>
                 </CardContent>
               </Card>
 
               {report.evidence && report.evidence.length > 0 && (
-                <Card className="mt-6">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <FileImage className="h-5 w-5 mr-2" />
-                      Evidence
-                    </CardTitle>
+                    <CardTitle>Evidence</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {report.evidence.map((url: string, idx: number) => (
-                        <div key={idx} className="overflow-hidden rounded-md border">
-                          <a href={url} target="_blank" rel="noopener noreferrer">
-                            {url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                              <img 
-                                src={url} 
-                                alt={`Evidence ${idx + 1}`}
-                                className="h-40 w-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-40 w-full flex items-center justify-center bg-gray-100">
-                                <span className="text-sm text-gray-500">View File</span>
-                              </div>
-                            )}
-                          </a>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {report.evidence.map((url, index) => (
+                        <div key={index} className="aspect-square relative">
+                          <img
+                            src={url}
+                            alt={`Evidence ${index + 1}`}
+                            className="object-cover w-full h-full rounded-lg"
+                          />
                         </div>
                       ))}
                     </div>
@@ -225,18 +277,167 @@ const ReportDetail = () => {
                 <CardFooter>
                   <Button 
                     className="w-full" 
+                    variant={isLiked ? "default" : "outline"}
                     onClick={handleSupport}
                   >
-                    <HandsClapping className="mr-2 h-4 w-4" />
-                    Join Hands
+                    <ThumbsUp className={`mr-2 h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                    {isLiked ? 'Joined Hands' : 'Join Hands'}
                   </Button>
                 </CardFooter>
               </Card>
+
+              {report.is_bounty_active && !isOwner && (
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle>Bounty Available</CardTitle>
+                    <CardDescription>
+                      The report owner is offering a bounty for help with this issue.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-2xl font-bold">
+                          {report.bounty_amount === 0 ? 'Free Help Requested' : 
+                            `${report.bounty_currency || 'USD'} ${report.bounty_amount}`}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Bounty Amount</div>
+                      </div>
+                      {report.help_needed && (
+                        <div>
+                          <div className="font-medium mb-1">Help Needed:</div>
+                          <p className="text-sm text-muted-foreground">{report.help_needed}</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => setShowAcceptBountyDialog(true)}
+                    >
+                      Accept Bounty
+                    </Button>
+                  </CardFooter>
+                </Card>
+              )}
+
+              {isOwner && applications.length > 0 && (
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle>
+                      <Users className="h-5 w-5 inline mr-2" />
+                      Bounty Applications
+                    </CardTitle>
+                    <CardDescription>
+                      People who want to help with your report
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {applications.map((app) => (
+                        <div key={app.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-medium">
+                                {app.helper?.raw_user_meta_data?.full_name || app.helper?.email || 'Anonymous'}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Applied {formatDistanceToNow(new Date(app.accepted_at), { addSuffix: true })}
+                              </div>
+                            </div>
+                            <Badge 
+                              variant={
+                                app.status === 'approved' ? 'default' : 
+                                app.status === 'rejected' ? 'destructive' : 
+                                'secondary'
+                              }
+                            >
+                              {app.status}
+                            </Badge>
+                          </div>
+                          {app.status === 'pending' && (
+                            <div className="flex gap-2 mt-4">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApplicationUpdate(app.id, 'approved')}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleApplicationUpdate(app.id, 'rejected')}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
       </main>
       <Footer />
+
+      <Dialog open={showAcceptBountyDialog} onOpenChange={setShowAcceptBountyDialog}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>Accept Bounty</DialogTitle>
+            <DialogDescription>
+              By accepting this bounty, you agree to help resolve the reported issue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <div className="flex gap-2">
+                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+                <div className="space-y-2">
+                  <h4 className="font-medium">Legal Agreement</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• I will act lawfully and ethically in all my actions</li>
+                    <li>• I understand that all actions must comply with local, state, and federal laws</li>
+                    <li>• I am solely responsible for my actions and their consequences</li>
+                    <li>• The platform is not responsible for any actions I take</li>
+                    <li>• Any agreement is between me and the report poster directly</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="bountyAgreement"
+                checked={bountyAgreement}
+                onCheckedChange={(checked) => setBountyAgreement(checked as boolean)}
+              />
+              <div className="space-y-1 leading-none">
+                <label htmlFor="bountyAgreement" className="text-sm font-medium cursor-pointer">
+                  I understand and agree to the legal terms
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  I acknowledge that I am responsible for ensuring all actions comply with the law
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAcceptBountyDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAcceptBounty} disabled={!bountyAgreement}>
+              Accept Bounty
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

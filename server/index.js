@@ -1,6 +1,7 @@
+require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 const reportsRouter = require('./routes/reports');
 const usersRouter = require('./routes/users');
 const authRouter = require('./routes/auth');
@@ -8,18 +9,24 @@ const filesRouter = require('./routes/files');
 const authMiddleware = require('./authMiddleware');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8085';
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_ANON_KEY
+);
 
 // Allow CORS from frontend
 app.use(cors({
-  origin: 'http://localhost:8085',
+  origin: CORS_ORIGIN,
   credentials: true,
 }));
 app.use(express.json());
 
-mongoose.connect('mongodb://localhost:27017/shadowReport', { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// Make Supabase client available to routes
+app.locals.supabase = supabase;
 
 app.get('/', (req, res) => {
   res.send('Hello, World!');

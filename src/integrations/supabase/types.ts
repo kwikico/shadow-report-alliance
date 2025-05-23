@@ -6,67 +6,113 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
+export interface Report {
+  id: string;
+  title: string;
+  description: string;
+  location: string | null;
+  category: string;
+  status: string;
+  supporters: number;
+  timestamp: string;
+  evidence: string[];
+  updates: any;
+  user_id: string;
+  bounty_amount?: number;
+  bounty_currency?: string;
+  bounty_description?: string;
+  help_needed?: string;
+  is_bounty_active?: boolean;
+}
+
+export interface ReportLike {
+  id: string;
+  report_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface BountyAcceptance {
+  id: string;
+  report_id: string;
+  helper_id: string;
+  accepted_at: string;
+  agreement_signed: boolean;
+  status: 'pending' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'cancelled';
+  approved_at?: string;
+  approved_by?: string;
+  rejection_reason?: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'bounty_accepted' | 'bounty_approved' | 'bounty_rejected' | 'report_updated' | 'new_supporter';
+  title: string;
+  message: string;
+  data?: any;
+  read: boolean;
+  created_at: string;
+}
+
+export interface ReportUpdate {
+  id: string;
+  report_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_by_type: 'owner' | 'helper';
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  username?: string;
+  full_name?: string;
+  avatar_url?: string;
+  bio?: string;
+  rating?: number;
+  completed_bounties?: number;
+  created_at: string;
+}
+
+export interface Database {
   public: {
     Tables: {
       reports: {
-        Row: {
-          category: string
-          description: string
-          evidence: string[] | null
-          id: string
-          location: string | null
-          status: string
-          supporters: number
-          timestamp: string
-          title: string
-          updates: Json | null
-          user_id: string
-        }
-        Insert: {
-          category: string
-          description: string
-          evidence?: string[] | null
-          id?: string
-          location?: string | null
-          status?: string
-          supporters?: number
-          timestamp?: string
-          title: string
-          updates?: Json | null
-          user_id: string
-        }
-        Update: {
-          category?: string
-          description?: string
-          evidence?: string[] | null
-          id?: string
-          location?: string | null
-          status?: string
-          supporters?: number
-          timestamp?: string
-          title?: string
-          updates?: Json | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-    }
+        Row: Report;
+        Insert: Omit<Report, 'id' | 'timestamp' | 'supporters'>;
+        Update: Partial<Omit<Report, 'id'>>;
+      };
+      report_likes: {
+        Row: ReportLike;
+        Insert: Omit<ReportLike, 'id' | 'created_at'>;
+        Update: never;
+      };
+    };
     Views: {
       [_ in never]: never
-    }
+    };
     Functions: {
       support_report: {
         Args: { report_id: string }
         Returns: undefined
-      }
-    }
+      };
+      increment_supporters: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      decrement_supporters: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+    };
     Enums: {
       [_ in never]: never
-    }
+    };
     CompositeTypes: {
       [_ in never]: never
-    }
+    };
   }
 }
 
