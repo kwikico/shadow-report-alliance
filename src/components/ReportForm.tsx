@@ -21,14 +21,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Shield, Upload, AlertTriangle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { stripExifData } from '@/utils/security';
-import { postFiles, createReport } from '@/api';
 import { CATEGORIES } from '@/constants';
+import { submitReport, uploadEvidence } from '@/api/supabaseReports';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const ReportForm = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { user } = useSupabaseAuth();
   const [formData, setFormData] = useState<any>({
     title: '',
     description: '',
@@ -69,60 +70,48 @@ const ReportForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast.error("You must be logged in to submit a report");
+      navigate("/login");
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
+      // Upload files if any
       let evidence = [];
-
       if (files.length > 0) {
-        const fileFormData = new FormData();
-        files.forEach((file) => fileFormData.append('files', file));
-
-        const fileUploadResponse = await postFiles(fileFormData);
-        if (!fileUploadResponse.urls) {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'File upload failed',
-          });
-          return;
-        }
-
-        evidence = fileUploadResponse.urls;
+        evidence = await uploadEvidence(files);
       }
 
+      // Submit the report
       const reportData = {
         ...formData,
         evidence,
       };
 
-      const reportResponse = await createReport(reportData);
-
-      toast({
-        title: 'Success',
-        description: 'Report submitted successfully',
-      });
-
-      // Clear form
-      setFormData({
-        title: '',
-        description: '',
-        location: '',
-        category: '',
-      });
-      setFiles([]);
-
-      // Navigate to success page or reports list
-      navigate('/reports');
+      const report = await submitReport(reportData);
+      
+      if (report) {
+        // Clear form
+        setFormData({
+          title: '',
+          description: '',
+          location: '',
+          category: '',
+        });
+        setFiles([]);
+        
+        // Navigate to reports list
+        setTimeout(() => {
+          navigate('/reports');
+        }, 1000);
+      }
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Failed to submit report.',
-      });
+      console.error("Submit error:", error);
+      toast.error('An unexpected error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
     }

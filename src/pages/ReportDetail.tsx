@@ -1,109 +1,101 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { getReportById, supportReport } from '@/api/supabaseReports';
+import { toast } from 'sonner';
 import { 
-  Card, 
-  CardContent, 
+  Clock, 
+  MapPin, 
+  Tag, 
+  UserCheck, 
+  AlertCircle, 
+  ArrowLeft, 
+  HandsClapping,
+  FileImage
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  MapPin, 
-  Calendar, 
-  FileText, 
-  Image, 
-  ThumbsUp, 
-  MessageSquare, 
-  ArrowLeft,
-  Shield,
-  AlertTriangle,
-  User
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { getReport, postSupport } from '@/api';
-
-interface EvidenceItem {
-  type: 'image' | 'document';
-  url: string;
-}
-
-interface Report {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  category: string;
-  timestamp: string;
-  supporters: number;
-  status: 'verified' | 'investigating' | 'pending';
-  evidence: string[];
-  updates: { date: string; content: string }[];
-}
+import { formatDistanceToNow } from 'date-fns';
 
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [report, setReport] = useState<Report | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [report, setReport] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      fetchReport(id);
-    }
-  }, [id]);
-
-  const fetchReport = async (reportId: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getReport(reportId);
-      setReport(data);
-    } catch (err) {
-      setError('Failed to fetch report');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleJoinHands = async () => {
-    if (id) {
-      try {
-        const response = await postSupport(id);
-        if (response) {
-          setReport((prevReport) =>
-            prevReport
-              ? { ...prevReport, supporters: response.supporters }
-              : prevReport
-          );
-          toast.success('You\'ve joined hands with this report', {
-            description:
-              'Your support has been registered while protecting your identity.',
-          });
-        } else {
-          throw new Error('Failed to update support count');
-        }
-      } catch (err) {
-        const description = err instanceof Error ? err.message : 'Failed to add support';
-        toast.error('Failed to add support', { description });
+    const fetchReport = async () => {
+      if (!id) {
+        navigate('/reports');
+        return;
       }
-    }
 
+      try {
+        setLoading(true);
+        const data = await getReportById(id);
+        
+        if (data) {
+          setReport(data);
+        } else {
+          navigate('/reports');
+          toast.error('Report not found');
+        }
+      } catch (error) {
+        console.error("Error fetching report:", error);
+        toast.error('Error loading report details');
+        navigate('/reports');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, [id, navigate]);
+
+  const handleSupport = async () => {
+    if (!report) return;
+
+    try {
+      const result = await supportReport(report.id);
+      if (result) {
+        setReport({ ...report, supporters: result.supporters });
+        toast.success("Thank you for your support!");
+      }
+    } catch (error) {
+      toast.error('Failed to register support');
+    }
   };
 
-  if (isLoading) {
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'investigating':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+  
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-grow pt-24 pb-16">
-          <div className="container mx-auto px-4">
-            <div className="text-center py-12">
-              <p>Loading report details...</p>
-            </div>
+          <div className="container mx-auto px-4 flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         </main>
         <Footer />
@@ -111,21 +103,28 @@ const ReportDetail = () => {
     );
   }
 
-  if (error || !report) {
+  if (!report) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-grow pt-24 pb-16">
-          <div className="container mx-auto px-4">
-            <div className="text-center py-12">
-              <p className="text-red-500">{error || 'Report not found'}</p>
-            </div>
+          <div className="container mx-auto px-4 text-center">
+            <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-4">Report Not Found</h1>
+            <p className="text-gray-600 mb-6">
+              The report you're looking for doesn't exist or has been removed.
+            </p>
+            <Button onClick={() => navigate('/reports')}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Reports
+            </Button>
           </div>
         </main>
         <Footer />
       </div>
     );
   }
+
+  const formattedDate = report.timestamp ? formatDistanceToNow(new Date(report.timestamp), { addSuffix: true }) : 'Unknown date';
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -133,231 +132,105 @@ const ReportDetail = () => {
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="mb-6">
-            <Link
-              to="/reports"
-              className="flex items-center text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Reports
-            </Link>
+            <Button variant="outline" onClick={() => navigate('/reports')} className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Reports
+            </Button>
+            <div className="flex flex-wrap justify-between items-start gap-4">
+              <div>
+                <h1 className="text-3xl font-bold">{report.title}</h1>
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
+                  <span className="flex items-center">
+                    <Clock className="h-4 w-4 mr-1" /> {formattedDate}
+                  </span>
+                  {report.location && (
+                    <span className="flex items-center">
+                      <MapPin className="h-4 w-4 mr-1" /> {report.location}
+                    </span>
+                  )}
+                  <span className="flex items-center">
+                    <Tag className="h-4 w-4 mr-1" /> {report.category}
+                  </span>
+                  <span className="flex items-center">
+                    <UserCheck className="h-4 w-4 mr-1" /> {report.supporters} supporters
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <Badge className={getStatusColor(report.status)}>
+                  {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                </Badge>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
               <Card>
-                <CardHeader className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge
-                      className={
-                        report.status === 'verified'
-                          ? 'bg-green-500'
-                          : report.status === 'investigating'
-                            ? 'bg-yellow-500'
-                            : 'bg-blue-500'
-                      }
-                    >
-                      {report.status}
-                    </Badge>
-                    <Badge variant="outline">{report.category}</Badge>
-                  </div>
-                  <CardTitle className="text-2xl font-bold">{report.title}</CardTitle>
-                  <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {report.location}
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(report.timestamp).toLocaleDateString()}
-                    </div>
-                  </div>
+                <CardHeader>
+                  <CardTitle>Description</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="prose prose-invert max-w-none">
-                    <p className="whitespace-pre-line text-foreground">
-                      {report.description}
-                    </p>
-                  </div>
+                <CardContent>
+                  <p className="whitespace-pre-line">{report.description}</p>
+                </CardContent>
+              </Card>
 
-                  <Separator />
-
-                  <div>
-                    <h3 className="font-medium flex items-center mb-3">
-                      <FileText className="h-5 w-5 mr-2" />
-                      Supporting Evidence
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {report.evidence.map((evidenceUrl, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center p-3 bg-secondary/50 rounded-md"
-                        >
-                          {evidenceUrl.endsWith('.pdf') ? (
-                            <FileText className="h-5 w-5 mr-2 text-primary" />
-                          ) : (
-                            <Image className="h-5 w-5 mr-2 text-primary" />
-                          )}
-                          <div className="flex-grow">
-                            <p className="text-sm font-medium truncate">
-                              {evidenceUrl.split('/').pop()}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {/* TODO: Add file size if available */}
-                            </p>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            View
-                          </Button>
+              {report.evidence && report.evidence.length > 0 && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <FileImage className="h-5 w-5 mr-2" />
+                      Evidence
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {report.evidence.map((url: string, idx: number) => (
+                        <div key={idx} className="overflow-hidden rounded-md border">
+                          <a href={url} target="_blank" rel="noopener noreferrer">
+                            {url.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                              <img 
+                                src={url} 
+                                alt={`Evidence ${idx + 1}`}
+                                className="h-40 w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-40 w-full flex items-center justify-center bg-gray-100">
+                                <span className="text-sm text-gray-500">View File</span>
+                              </div>
+                            )}
+                          </a>
                         </div>
                       ))}
                     </div>
-                  </div>
-
-                  {report.updates.length > 0 && (
-                    <>
-                      <Separator />
-                      <div>
-                        <h3 className="font-medium flex items-center mb-3">
-                          <Calendar className="h-5 w-5 mr-2" />
-                          Report Updates
-                        </h3>
-                        <div className="space-y-3">
-                          {report.updates.map((update, index) => (
-                            <div
-                              key={index}
-                              className="p-3 bg-secondary/50 rounded-md"
-                            >
-                              <div className="text-xs text-muted-foreground mb-1">
-                                {new Date(update.date).toLocaleDateString()} at{' '}
-                                {new Date(update.date).toLocaleTimeString()}
-                              </div>
-                              <p className="text-sm">{update.content}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            <div className="space-y-6">
+            <div>
               <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4 text-center">
-                    <h3 className="text-lg font-medium">Show Your Support</h3>
-                    <div className="text-4xl font-bold">{report.supporters}</div>
-                    <p className="text-sm text-muted-foreground">
-                      people have joined hands
-                    </p>
-                    <Button className="w-full" onClick={handleJoinHands}>
-                      <ThumbsUp className="h-5 w-5 mr-2" />
-                      Join Hands
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Your support increases visibility and priority of this
-                      report while maintaining your anonymity.
-                    </p>
+                <CardHeader>
+                  <CardTitle>Support This Report</CardTitle>
+                  <CardDescription>
+                    Show your support by joining hands with others who believe this issue should be addressed.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-4">
+                    <div className="text-3xl font-bold">{report.supporters}</div>
+                    <div className="text-sm text-gray-500">Current Supporters</div>
                   </div>
                 </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Secure Discussion</h3>
-                    <div className="p-4 bg-secondary/50 rounded-md text-center">
-                      <MessageSquare className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <p className="text-sm mb-2">
-                        Join the encrypted discussion about this report
-                      </p>
-                      <Button variant="outline" className="w-full">
-                        Open Secure Chat
-                      </Button>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        End-to-end encrypted • Your identity remains protected
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Report Verification</h3>
-                    <div
-                      className={`p-3 rounded-md ${
-                        report.status === 'verified'
-                          ? 'bg-green-500/10'
-                          : report.status === 'investigating'
-                            ? 'bg-yellow-500/10'
-                            : 'bg-blue-500/10'
-                      }`}
-                    >
-                      <div className="flex items-center mb-2">
-                        <Shield
-                          className={`h-5 w-5 mr-2 ${
-                            report.status === 'verified'
-                              ? 'text-green-500'
-                              : report.status === 'investigating'
-                                ? 'text-yellow-500'
-                                : 'text-blue-500'
-                          }`}
-                        />
-                        <span className="font-medium">
-                          {report.status === 'verified'
-                            ? 'Verified Report'
-                            : report.status === 'investigating'
-                              ? 'Under Investigation'
-                              : 'Pending Verification'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {report.status === 'verified'
-                          ? 'This report has been verified by our team and found to be credible based on evidence.'
-                          : report.status === 'investigating'
-                            ? 'Our team is actively investigating this report to verify its contents.'
-                            : 'This report is pending verification by our team.'}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-secondary/50 rounded-md">
-                      <div className="flex items-center mb-2">
-                        <AlertTriangle className="h-5 w-5 mr-2 text-yellow-500" />
-                        <span className="font-medium">Report Responsibly</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        If you have additional information about this report,
-                        please submit it securely through our platform.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Report Submitter</h3>
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-primary/10 text-primary rounded-full p-2">
-                        <User className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Anonymous Whistleblower</p>
-                        <p className="text-xs text-muted-foreground">
-                          Identity protected for security
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      This platform protects the identity of all report
-                      submitters to ensure their safety.
-                    </p>
-                  </div>
-                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleSupport}
+                  >
+                    <HandsClapping className="mr-2 h-4 w-4" />
+                    Join Hands
+                  </Button>
+                </CardFooter>
               </Card>
             </div>
           </div>

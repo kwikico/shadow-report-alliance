@@ -9,13 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      reports: {
+        Row: {
+          category: string
+          description: string
+          evidence: string[] | null
+          id: string
+          location: string | null
+          status: string
+          supporters: number
+          timestamp: string
+          title: string
+          updates: Json | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          description: string
+          evidence?: string[] | null
+          id?: string
+          location?: string | null
+          status?: string
+          supporters?: number
+          timestamp?: string
+          title: string
+          updates?: Json | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          description?: string
+          evidence?: string[] | null
+          id?: string
+          location?: string | null
+          status?: string
+          supporters?: number
+          timestamp?: string
+          title?: string
+          updates?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      support_report: {
+        Args: { report_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

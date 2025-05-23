@@ -20,6 +20,7 @@ import ReportDetail from "@/pages/ReportDetail";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/NotFound";
+import { SeedDataButton } from "@/utils/seedReports";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,8 @@ const App = () => {
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
+          {/* Seed data button for development */}
+          <SeedDataButton />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
