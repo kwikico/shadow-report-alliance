@@ -6,113 +6,228 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Report {
-  id: string;
-  title: string;
-  description: string;
-  location: string | null;
-  category: string;
-  status: string;
-  supporters: number;
-  timestamp: string;
-  evidence: string[];
-  updates: any;
-  user_id: string;
-  bounty_amount?: number;
-  bounty_currency?: string;
-  bounty_description?: string;
-  help_needed?: string;
-  is_bounty_active?: boolean;
-}
-
-export interface ReportLike {
-  id: string;
-  report_id: string;
-  user_id: string;
-  created_at: string;
-}
-
-export interface BountyAcceptance {
-  id: string;
-  report_id: string;
-  helper_id: string;
-  accepted_at: string;
-  agreement_signed: boolean;
-  status: 'pending' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'cancelled';
-  approved_at?: string;
-  approved_by?: string;
-  rejection_reason?: string;
-}
-
-export interface Notification {
-  id: string;
-  user_id: string;
-  type: 'bounty_accepted' | 'bounty_approved' | 'bounty_rejected' | 'report_updated' | 'new_supporter';
-  title: string;
-  message: string;
-  data?: any;
-  read: boolean;
-  created_at: string;
-}
-
-export interface ReportUpdate {
-  id: string;
-  report_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  updated_by_type: 'owner' | 'helper';
-}
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  username?: string;
-  full_name?: string;
-  avatar_url?: string;
-  bio?: string;
-  rating?: number;
-  completed_bounties?: number;
-  created_at: string;
-}
-
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      reports: {
-        Row: Report;
-        Insert: Omit<Report, 'id' | 'timestamp' | 'supporters'>;
-        Update: Partial<Omit<Report, 'id'>>;
-      };
+      bounty_acceptances: {
+        Row: {
+          accepted_at: string
+          agreement_signed: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          helper_id: string | null
+          id: string
+          rejection_reason: string | null
+          report_id: string | null
+          status: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          agreement_signed?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          helper_id?: string | null
+          id?: string
+          rejection_reason?: string | null
+          report_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          agreement_signed?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          helper_id?: string | null
+          id?: string
+          rejection_reason?: string | null
+          report_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bounty_acceptances_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       report_likes: {
-        Row: ReportLike;
-        Insert: Omit<ReportLike, 'id' | 'created_at'>;
-        Update: never;
-      };
-    };
+        Row: {
+          created_at: string
+          id: string
+          report_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_likes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_updates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          report_id: string | null
+          updated_by_type: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          updated_by_type: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          report_id?: string | null
+          updated_by_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_updates_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          bounty_amount: number | null
+          bounty_currency: string | null
+          category: string
+          description: string
+          evidence: string[] | null
+          help_needed: string | null
+          id: string
+          is_bounty_active: boolean | null
+          location: string | null
+          status: string
+          supporters: number
+          timestamp: string
+          title: string
+          updates: Json | null
+          user_id: string
+        }
+        Insert: {
+          bounty_amount?: number | null
+          bounty_currency?: string | null
+          category: string
+          description: string
+          evidence?: string[] | null
+          help_needed?: string | null
+          id?: string
+          is_bounty_active?: boolean | null
+          location?: string | null
+          status?: string
+          supporters?: number
+          timestamp?: string
+          title: string
+          updates?: Json | null
+          user_id: string
+        }
+        Update: {
+          bounty_amount?: number | null
+          bounty_currency?: string | null
+          category?: string
+          description?: string
+          evidence?: string[] | null
+          help_needed?: string | null
+          id?: string
+          is_bounty_active?: boolean | null
+          location?: string | null
+          status?: string
+          supporters?: number
+          timestamp?: string
+          title?: string
+          updates?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
     Views: {
       [_ in never]: never
-    };
+    }
     Functions: {
+      decrement_supporters: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      increment_supporters: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       support_report: {
         Args: { report_id: string }
         Returns: undefined
-      };
-      increment_supporters: {
-        Args: Record<string, never>;
-        Returns: number;
-      };
-      decrement_supporters: {
-        Args: Record<string, never>;
-        Returns: number;
-      };
-    };
+      }
+    }
     Enums: {
       [_ in never]: never
-    };
+    }
     CompositeTypes: {
       [_ in never]: never
-    };
+    }
   }
 }
 
