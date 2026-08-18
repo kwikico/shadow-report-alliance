@@ -7,7 +7,6 @@ import {
   Routes,
   Route,
   Navigate,
-  Outlet,
 } from "react-router-dom";
 import Index from "@/pages/Index";
 import Reports from "@/pages/Reports";
