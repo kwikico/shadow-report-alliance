@@ -19,7 +19,7 @@ const WalletRegisterForm: React.FC<WalletRegisterFormProps> = ({ onBack, isFullF
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [walletUsername, setWalletUsername] = useState('');
   const [showWalletForm, setShowWalletForm] = useState(false);
-  const [walletConnectionTimer, setWalletConnectionTimer] = useState<NodeJS.Timeout | null>(null);
+  const [walletConnectionTimer, setWalletConnectionTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [walletData, setWalletData] = useState<{address: string, signature: string} | null>(null);
 
   useEffect(() => {
